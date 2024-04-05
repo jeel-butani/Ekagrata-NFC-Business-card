@@ -13,7 +13,6 @@ class Dashboard extends StatefulWidget {
   static int userId = 0;
   static int businessId = 0;
   Dashboard({super.key, required int userId}) {
-    // ignore: prefer_initializing_formals
     Dashboard.userId = userId;
   }
 
@@ -26,16 +25,7 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.center,
-      decoration: const BoxDecoration(color: Colors.white
-          //   gradient: LinearGradient(
-          // begin: Alignment.topCenter,
-          // end: Alignment.bottomCenter,
-          // colors: [
-          //   Colors.grey,
-          //   Colors.white,
-          // ],
-          // )
-          ),
+      decoration: const BoxDecoration(color: Colors.white),
       child: Scaffold(
         drawer: DrawerMenu(userId: Dashboard.userId),
         backgroundColor: Colors.transparent,

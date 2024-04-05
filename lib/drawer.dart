@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
+import 'package:mu_card/dashboard.dart';
 import 'package:mu_card/editprofile.dart';
 import 'package:mu_card/login/welcomemobile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,7 +14,6 @@ import 'apiConnection/apiConnection.dart';
 class DrawerMenu extends StatefulWidget {
   static int userId = 0;
   DrawerMenu({super.key, required userId}) {
-    // ignore: prefer_initializing_formals
     DrawerMenu.userId = userId;
   }
 
@@ -25,8 +25,6 @@ class _DrawerMenuState extends State<DrawerMenu> {
   String name = '';
   String phNum = '';
   String email = '';
-  //final Uri _url = Uri.parse(
-  //'https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox?compose=GTvVlcRwRfHrFNSpMdtFSwFPXMpzrRsKFNLcbtgGVNXbTGHBJqrttdhqmRPkdlMbSdQFndfLTmzdF');
 
   @override
   void initState() {
@@ -62,7 +60,7 @@ class _DrawerMenuState extends State<DrawerMenu> {
               ),
               child: IconButton(
                 onPressed: () {
-                  Get.back();
+                  Scaffold.of(context).closeDrawer();
                 },
                 icon: const Icon(
                   Icons.chevron_left_sharp,

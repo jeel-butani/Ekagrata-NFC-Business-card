@@ -165,7 +165,6 @@ class _ShowBusinessProfileState extends State<ShowBusinessProfile>
                 Padding(
                   padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
                   child: SizedBox(
-                    // height: 50,
                     child: Text(
                       email,
                       style: TextStyle(

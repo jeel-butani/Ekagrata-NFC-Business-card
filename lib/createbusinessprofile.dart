@@ -4180,11 +4180,8 @@ class _CreateBusinessProfileState extends State<CreateBusinessProfile>
           // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Business profile Created successfully')));
-
           Get.to(() => Dashboard(userId: CreateBusinessProfile.userId));
         } else {
-          // ignore: avoid_print
-          print("Sorry, there was an error saving the profile.");
           Fluttertoast.showToast(msg: "Error: Unable to save profile");
         }
       }
