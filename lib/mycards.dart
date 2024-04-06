@@ -2,6 +2,7 @@
 // ignore: depend_on_referenced_packages
 import 'dart:convert';
 
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get/get.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
@@ -30,6 +31,7 @@ class _MyCardsState extends State<MyCards> with SingleTickerProviderStateMixin {
   String name = '';
   String designation = '';
   String industry = '';
+  String imageUrl = '';
   Future<void> share() async {
     await FlutterShare.share(
         title: 'Share NFC Card App',
@@ -43,6 +45,20 @@ class _MyCardsState extends State<MyCards> with SingleTickerProviderStateMixin {
     FetchActiveProfile();
 
     super.initState();
+  }
+
+  Future<void> getImage() async {
+    try {
+      String userId = MyCards.businessId.toString();
+      String fileName = 'profilePic_$userId';
+      Reference firebaseStorageRef = FirebaseStorage.instance
+          .ref()
+          .child('businessProfileImages/$fileName');
+      imageUrl = await firebaseStorageRef.getDownloadURL();
+      setState(() {});
+    } catch (e) {
+      print('Error fetching image from Firebase Storage: $e');
+    }
   }
 
   @override
@@ -138,6 +154,21 @@ class _MyCardsState extends State<MyCards> with SingleTickerProviderStateMixin {
                       cardSelected
                           ? Column(
                               children: [
+                                ClipOval(
+                                  child: imageUrl.isNotEmpty
+                                      ? Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          height: 120,
+                                          width: 120,
+                                        )
+                                      : Image.asset(
+                                          'assets/images/guest.png',
+                                          fit: BoxFit.cover,
+                                          height: 200,
+                                          width: 200,
+                                        ),
+                                ),
                                 Text(
                                   name,
                                   style: const TextStyle(
@@ -441,6 +472,7 @@ class _MyCardsState extends State<MyCards> with SingleTickerProviderStateMixin {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         // print(data['data']['profileId']);
+        getImage();
         setState(() {
           title = data['data']['company'];
           industry = data['data']['industry'];

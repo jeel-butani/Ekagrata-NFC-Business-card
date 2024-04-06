@@ -1,15 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:mu_card/dashboard.dart';
 import 'package:mu_card/editprofile.dart';
 import 'package:mu_card/login/welcomemobile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'apiConnection/apiConnection.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class DrawerMenu extends StatefulWidget {
   static int userId = 0;
@@ -25,11 +28,84 @@ class _DrawerMenuState extends State<DrawerMenu> {
   String name = '';
   String phNum = '';
   String email = '';
+  File? _image;
+  late AnimationController _animationController;
+  String imageUrl = '';
 
   @override
   void initState() {
     fetchData();
+    getImage();
     super.initState();
+  }
+
+  Future getImageCamera() async {
+    final image = await ImagePicker().pickImage(source: ImageSource.camera);
+    if (image == null) {
+      return;
+    }
+    final imageTemporary = File(image.path);
+
+    setState(() {
+      this._image = imageTemporary;
+    });
+  }
+
+  Future<void> getImage() async {
+    try {
+      String userId = DrawerMenu.userId.toString();
+      String fileName = 'profilePic_$userId'; 
+      Reference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child('profileImages/$fileName');
+      imageUrl = await firebaseStorageRef.getDownloadURL();
+      setState(() {}); 
+    } catch (e) {
+      print('Error fetching image from Firebase Storage: $e');
+    }
+  }
+
+  Future getImageGallary() async {
+    try {
+      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image == null) {
+        return;
+      }
+      final imageTemporary = File(image.path);
+
+      setState(() {
+        this._image = imageTemporary;
+      });
+      String imageUrl =
+          await uploadImageToFirebase(_image!, DrawerMenu.userId.toString());
+      print('Image uploaded successfully. URL: $imageUrl');
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  Future<String> uploadImageToFirebase(File imageFile, String userId) async {
+    try {
+      String fileName = 'profilePic_$userId';
+      Reference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child('profileImages/$fileName');
+      UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        print('Upload task state: ${snapshot.state}');
+        print(
+            'Upload task progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%');
+      }, onError: (dynamic error) {
+        print('Upload task error: $error');
+      });
+
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+      print('Image uploaded successfully. URL: $imageUrl');
+      return imageUrl;
+    } catch (e) {
+      print('Error uploading image to Firebase Storage: $e');
+      return '';
+    }
   }
 
   @override
@@ -79,15 +155,39 @@ class _DrawerMenuState extends State<DrawerMenu> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    height: 100,
-                    width: 100,
-                    decoration: BoxDecoration(
-                        color: Colors.blueGrey[100],
-                        borderRadius: BorderRadius.circular(100)),
-                    child: const Icon(
-                      Icons.person_outline_rounded,
-                      size: 58,
+                  InkWell(
+                    onTap: () {
+                      // print('pressed');
+                      // getImageGallary();
+                      // getImageCamera();
+                      _showDialogBox(context);
+                    },
+                    child: ClipOval(
+                      child: _image != null
+                          ? Image.file(
+                              _image!,
+                              fit: BoxFit.cover,
+                              height: 120,
+                              width: 120,
+                            )
+                          : CircleAvatar(
+                              radius: 50,
+                              child: ClipOval(
+                                child: imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        height: 120,
+                                        width: 120,
+                                      )
+                                    : Image.asset(
+                                        'assets/images/guest.png',
+                                        fit: BoxFit.cover,
+                                        height: 200,
+                                        width: 200,
+                                      ),
+                              ),
+                            ),
                     ),
                   ),
                 ],
@@ -419,5 +519,103 @@ class _DrawerMenuState extends State<DrawerMenu> {
     } catch (e) {
       Fluttertoast.showToast(msg: e.toString());
     }
+  }
+
+  void _showDialogBox(BuildContext context) {
+    showModalBottomSheet(
+      backgroundColor: Colors.transparent,
+      context: context,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(10),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.0),
+            child: Container(
+              decoration:
+                  BoxDecoration(color: Color.fromARGB(255, 0, 255, 247)),
+              height: 220,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(21, 21, 21, 0),
+                    child: Text(
+                      'Select Picture',
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromARGB(255, 0, 4, 120),
+                          letterSpacing: 2,
+                          fontFamily: 'Times New Roman'),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 18,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(60, 0, 0, 0),
+                        child: InkWell(
+                          onTap: () {
+                            getImageCamera();
+                            Navigator.pop(context);
+                          },
+                          child: Column(
+                            children: [
+                              Image.asset(
+                                'assets/images/camera.png',
+                                height: 70,
+                                width: 70,
+                              ),
+                              Text(
+                                'Camera',
+                                style: TextStyle(
+                                    fontFamily: 'Times New Roman',
+                                    fontSize: 21,
+                                    color: Color.fromARGB(255, 7, 0, 99),
+                                    fontWeight: FontWeight.w500),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 0, 60, 0),
+                        child: InkWell(
+                          onTap: () {
+                            getImageGallary();
+                            Navigator.pop(context);
+                          },
+                          child: Column(
+                            children: [
+                              Image.asset(
+                                'assets/images/gallery.png',
+                                height: 70,
+                                width: 70,
+                              ),
+                              Text(
+                                'Gallery',
+                                style: TextStyle(
+                                    fontFamily: 'Times New Roman',
+                                    fontSize: 21,
+                                    color: Color.fromARGB(255, 7, 0, 99),
+                                    fontWeight: FontWeight.w500),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    _animationController.forward();
   }
 }

@@ -1,7 +1,8 @@
 // ignore_for_file: prefer_const_constructors, avoid_print
 import 'dart:convert';
 
-import 'package:get/get.dart'; 
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:get/get.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -52,14 +53,29 @@ class _ShowBusinessProfileState extends State<ShowBusinessProfile>
   String updatedAt = '';
   int status = 0;
   int userIdIndex = 0;
+  String imageUrl = '';
 
   @override
   void initState() {
     super.initState();
+    getImage();
     print(ShowBusinessProfile.businessId);
     fetchBusinessProfile();
   }
-  
+
+  Future<void> getImage() async {
+    try {
+      String userId = ShowBusinessProfile.businessId.toString();
+      String fileName = 'profilePic_$userId';
+      Reference firebaseStorageRef =
+          FirebaseStorage.instance.ref().child('businessProfileImages/$fileName');
+      imageUrl = await firebaseStorageRef.getDownloadURL();
+      setState(() {});
+    } catch (e) {
+      print('Error fetching image from Firebase Storage: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     //contact
@@ -1320,12 +1336,19 @@ class _ShowBusinessProfileState extends State<ShowBusinessProfile>
                           child: CircleAvatar(
                             radius: 50,
                             child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/guest.png',
-                                fit: BoxFit.cover,
-                                height: 200,
-                                width: 200,
-                              ),
+                              child: imageUrl.isNotEmpty
+                                  ? Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      height: 120,
+                                      width: 120,
+                                    )
+                                  : Image.asset(
+                                      'assets/images/guest.png',
+                                      fit: BoxFit.cover,
+                                      height: 200,
+                                      width: 200,
+                                    ),
                             ),
                           ),
                         ),
@@ -2222,5 +2245,4 @@ class _ShowBusinessProfileState extends State<ShowBusinessProfile>
       print("Error: $e");
     }
   }
-  
 }

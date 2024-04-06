@@ -52,6 +52,7 @@ dependencies:
   nfc_manager: ^3.3.0
   lottie: ^2.7.0
   loading_animation_widget: ^1.2.0+4
+  firebase_storage: ^11.6.0
 
 
 dev_dependencies:

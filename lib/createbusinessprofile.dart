@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import 'Business/business.dart';
 import 'apiConnection/apiConnection.dart';
 import 'get_size.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class CreateBusinessProfile extends StatefulWidget {
   static int userId = 0;
@@ -91,6 +92,33 @@ class _CreateBusinessProfileState extends State<CreateBusinessProfile>
   }
 
   File? _image;
+
+  Future<String> uploadImageToFirebase(
+      File imageFile, String businessId) async {
+    try {
+      String fileName = 'profilePic_$businessId';
+      Reference firebaseStorageRef = FirebaseStorage.instance
+          .ref()
+          .child('businessProfileImages/$fileName');
+      UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        print('Upload task state: ${snapshot.state}');
+        print(
+            'Upload task progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%');
+      }, onError: (dynamic error) {
+        print('Upload task error: $error');
+      });
+
+      TaskSnapshot taskSnapshot = await uploadTask;
+      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+      print('Image uploaded successfully. URL: $imageUrl');
+      return imageUrl;
+    } catch (e) {
+      print('Error uploading image to Firebase Storage: $e');
+      return '';
+    }
+  }
 
   Future getImageCamera() async {
     final image = await ImagePicker().pickImage(source: ImageSource.camera);
@@ -3245,8 +3273,8 @@ class _CreateBusinessProfileState extends State<CreateBusinessProfile>
                                 ? Image.file(
                                     _image!,
                                     fit: BoxFit.cover,
-                                    height: 120,
-                                    width: 120,
+                                    height: 100,
+                                    width: 100,
                                   )
                                 : CircleAvatar(
                                     radius: 50,
@@ -4177,9 +4205,11 @@ class _CreateBusinessProfileState extends State<CreateBusinessProfile>
       if (res.statusCode == 200) {
         var resBody = jsonDecode(res.body);
         if (resBody['success']) {
+          uploadImageToFirebase(_image!, resBody['businessId'].toString());
           // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Business profile Created successfully')));
+
           Get.to(() => Dashboard(userId: CreateBusinessProfile.userId));
         } else {
           Fluttertoast.showToast(msg: "Error: Unable to save profile");
